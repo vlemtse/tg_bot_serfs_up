@@ -1,0 +1,9 @@
+server:
+  env_name: ${APP_ENV:prod}
+  port: ${PORT:8888}
+
+tg_bot:
+  token: ${TG_BOT_TOKEN}
+
+db:
+  url: ${TG_BOT_DB_URL:sqlite+aiosqlite:///localdb/tg_bot_serfs_up.sqlite3}
