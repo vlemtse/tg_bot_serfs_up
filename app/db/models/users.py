@@ -14,7 +14,7 @@ class Users(Base):
     username: Mapped[str] = mapped_column(nullable=False)
     first_name: Mapped[str] = mapped_column(nullable=True)
     last_name: Mapped[str] = mapped_column(nullable=True)
-    registration_name: Mapped[str] = mapped_column(nullable=True)
+    registration_name: Mapped[str] = mapped_column(nullable=False)
     connection_time: Mapped[str] = mapped_column(default=datetime.now(UTC))
 
 
