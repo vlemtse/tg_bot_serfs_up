@@ -1,5 +1,5 @@
 from aiogram import F, Router
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
@@ -31,6 +31,22 @@ async def command_start_handler(msg: Message, state: FSMContext) -> None:
     await state.set_state(SetName.accept_name_or_set_new)
 
 
+@router.message(Command('update_name'))
+async def update_user_name(msg: Message, state: FSMContext):
+    user_data = await state.get_data()
+    name = user_data.get('name')
+    if not name:
+        name = f'{msg.from_user.first_name} {msg.from_user.last_name[0].upper()}'
+
+    await msg.answer(f'{hbold(name)}'
+                     f'- имя соответствует?',
+                     reply_markup=set_user_name)
+
+    await state.update_data(name=name)
+
+    await state.set_state(SetName.accept_name_or_set_new)
+
+
 @router.callback_query(
     SetName.accept_name_or_set_new,
     F.data == 'set_user_name_yes'
@@ -41,7 +57,9 @@ async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext):
     if not name:
         name = f'{callback_query.from_user.first_name} {callback_query.from_user.last_name[0].upper()}'
 
+    # TODO Сохранить в бд
     await state.update_data(name=name)
+
     await callback_query.bot.edit_message_text(
         text=f'Задано имя - {hbold(name)}',
         chat_id=callback_query.message.chat.id,

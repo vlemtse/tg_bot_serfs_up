@@ -19,3 +19,5 @@ win32-setctime==1.1.0
 yarl==1.9.4
 
 PyYAML~=6.0.1
+SQLAlchemy~=2.0.28
+alembic~=1.13.1

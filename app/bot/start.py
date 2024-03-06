@@ -5,7 +5,7 @@ from aiogram.enums.parse_mode import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from app.bot import keyboards
-from app.bot.routers import login
+from app.bot.routers import login, reg_for_lesson
 from app.configs import config
 
 
@@ -17,7 +17,7 @@ async def bot_start():
 
     # Добавлять роутеры тут:
     dp.include_router(login.router)
-    # dp.include_router(meter.router)
+    dp.include_router(reg_for_lesson.router)
 
     # Устанавливаем команды в кнопке меню
     await bot.set_my_commands(commands=keyboards.side_menu)
