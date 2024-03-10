@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.keyboards import set_user_name
 from app.db import Users
-from app.db.crud.users import create_user, get_user
+from app.db.crud.users import create_user
 from app.bot.commands import commands
 
 router = Router()
@@ -25,24 +25,22 @@ class SetName(StatesGroup):
 
 
 @router.message(CommandStart())
-async def command_start_handler(msg: Message, state: FSMContext, session: AsyncSession) -> None:
+async def command_start_handler(msg: Message, state: FSMContext, user: Users) -> None:
     """
     This handler receives messages with `/start` command
     """
     await msg.answer(f"Привет, {hbold(msg.from_user.full_name)}!"
                      f"\nДля регистрации на урок необходимо указать Имя и первую букву Фамилии")
 
-    await user_check_name(msg, state, session)
+    await user_check_name(msg, state, user)
 
 
-@router.message(Command(command.update_name))
-async def update_user_name(msg: Message, state: FSMContext, session: AsyncSession):
-    await user_check_name(msg, state, session)
+@router.message(Command(command.update_name.key))
+async def update_user_name(msg: Message, state: FSMContext, user: Users):
+    await user_check_name(msg, state, user)
 
 
-async def user_check_name(msg: Message, state: FSMContext, session: AsyncSession):
-    user = await get_user(session, msg.from_user.id)
-
+async def user_check_name(msg: Message, state: FSMContext, user: Users):
     if user:
         name = user.registration_name
     else:
@@ -61,7 +59,7 @@ async def user_check_name(msg: Message, state: FSMContext, session: AsyncSession
     SetName.accept_name_or_set_new,
     F.data == 'set_user_name_yes'
 )
-async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, session: AsyncSession):
+async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, session: AsyncSession, user: Users):
     user_data = await state.get_data()
     name = user_data.get('name')
 
@@ -70,13 +68,12 @@ async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, se
 
     user_id = callback_query.from_user.id
 
-    user = await get_user(session, user_id)
     if user:
         user.registration_name = name
         user.updated_at = str(datetime.now(UTC))
     else:
         user = Users(
-            id=callback_query.from_user.id,
+            id=user_id,
             username=callback_query.from_user.username,
             first_name=callback_query.from_user.first_name,
             last_name=callback_query.from_user.last_name,

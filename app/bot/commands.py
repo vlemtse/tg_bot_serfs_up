@@ -9,8 +9,10 @@ class Base(BaseModel):
 
 
 class Admin(BaseModel):
-    help: Base = Base(key="adm_help", description="Команды админа:")
+    help: Base = Base(key="adm_help", description="Команды админа")
     all_users: Base = Base(key="all_users", description="Все пользователи")
+    add_admin: Base = Base(key="add_admin", description="Добавить нового админа")
+    delete_admin: Base = Base(key="delete_admin", description="Удалить админа")
 
 
 class User(BaseModel):
