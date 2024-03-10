@@ -1,12 +1,16 @@
+from datetime import datetime, UTC
+
 from aiogram import F, Router
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.markdown import hbold
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.keyboards import set_user_name
-
+from app.db import Users
+from app.db.crud.users import create_user, get_user, get_all_users
 
 router = Router()
 
@@ -18,28 +22,31 @@ class SetName(StatesGroup):
 
 
 @router.message(CommandStart())
-async def command_start_handler(msg: Message, state: FSMContext) -> None:
+async def command_start_handler(msg: Message, state: FSMContext, session: AsyncSession) -> None:
     """
     This handler receives messages with `/start` command
     """
     await msg.answer(f"Привет, {hbold(msg.from_user.full_name)}!"
                      f"\nДля регистрации на урок необходимо указать Имя и первую букву Фамилии")
 
-    await msg.answer(f'{hbold(msg.from_user.first_name)} {hbold(msg.from_user.last_name[0].upper())} '
-                     f'- имя соответствует?',
-                     reply_markup=set_user_name)
-    await state.set_state(SetName.accept_name_or_set_new)
+    await user_check_name(msg, state, session)
 
 
 @router.message(Command('update_name'))
-async def update_user_name(msg: Message, state: FSMContext):
-    user_data = await state.get_data()
-    name = user_data.get('name')
-    if not name:
+async def update_user_name(msg: Message, state: FSMContext, session: AsyncSession):
+    await user_check_name(msg, state, session)
+
+
+async def user_check_name(msg: Message, state: FSMContext, session: AsyncSession):
+    user = await get_user(session, msg.from_user.id)
+
+    if user:
+        name = user.registration_name
+    else:
         name = f'{msg.from_user.first_name} {msg.from_user.last_name[0].upper()}'
 
     await msg.answer(f'{hbold(name)}'
-                     f'- имя соответствует?',
+                     f' - имя соответствует?',
                      reply_markup=set_user_name)
 
     await state.update_data(name=name)
@@ -51,22 +58,38 @@ async def update_user_name(msg: Message, state: FSMContext):
     SetName.accept_name_or_set_new,
     F.data == 'set_user_name_yes'
 )
-async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext):
+async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, session: AsyncSession):
     user_data = await state.get_data()
     name = user_data.get('name')
+
     if not name:
         name = f'{callback_query.from_user.first_name} {callback_query.from_user.last_name[0].upper()}'
 
-    # TODO Сохранить в бд
-    await state.update_data(name=name)
+    user_id = callback_query.from_user.id
+
+    user = await get_user(session, user_id)
+    if user:
+        user.registration_name = name
+        user.updated_at = str(datetime.now(UTC))
+    else:
+        user = Users(
+            id=callback_query.from_user.id,
+            username=callback_query.from_user.username,
+            first_name=callback_query.from_user.first_name,
+            last_name=callback_query.from_user.last_name,
+            registration_name=name,
+            updated_at=str(datetime.now(UTC))
+        )
+
+    await create_user(session, user)
 
     await callback_query.bot.edit_message_text(
-        text=f'Задано имя - {hbold(name)}',
+        text=f'Задано имя - {hbold(user.registration_name)}',
         chat_id=callback_query.message.chat.id,
         message_id=callback_query.message.message_id
     )
 
-    await state.set_state(SetName.set_name_done)
+    await state.clear()
 
 
 @router.callback_query(
@@ -76,7 +99,7 @@ async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext):
 async def msg_set_user_name_new(callback_query: CallbackQuery, state: FSMContext):
     await callback_query.bot.edit_message_text(
         text=f'Введите Имя и первую букву Фамилии. Например:\n'
-             f'{hbold('Иванов И')}',
+             f'{hbold('Иван В')}',
         chat_id=callback_query.message.chat.id,
         message_id=callback_query.message.message_id
     )
@@ -94,7 +117,3 @@ async def set_user_name_new(msg: Message, state: FSMContext):
                      reply_markup=set_user_name)
 
     await state.set_state(SetName.accept_name_or_set_new)
-
-
-
-

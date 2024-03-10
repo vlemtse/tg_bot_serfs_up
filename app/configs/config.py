@@ -14,6 +14,7 @@ class TGBot(BaseModel):
 
 class Database(BaseModel):
     url: str
+    echo: bool
 
 
 class Config(BaseModel):

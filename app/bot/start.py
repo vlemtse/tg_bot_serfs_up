@@ -1,11 +1,10 @@
-import asyncio
-
 from aiogram import Bot, Dispatcher
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from app.bot import keyboards
-from app.bot.routers import login, reg_for_lesson
+from app.bot.middlewares import DbSessionMiddleware
+from app.bot.routers import login, reg_for_lesson, admin
 from app.configs import config
 
 
@@ -14,8 +13,10 @@ async def bot_start():
 
     # storage=MemoryStorage() - временное хранение, постоянное - в бд
     dp = Dispatcher(storage=MemoryStorage())
+    dp.update.middleware(DbSessionMiddleware())
 
     # Добавлять роутеры тут:
+    dp.include_router(admin.router)
     dp.include_router(login.router)
     dp.include_router(reg_for_lesson.router)
 
