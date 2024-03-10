@@ -10,9 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.keyboards import set_user_name
 from app.db import Users
-from app.db.crud.users import create_user, get_user, get_all_users
+from app.db.crud.users import create_user, get_user
+from app.bot.commands import commands
 
 router = Router()
+
+command = commands.user
 
 
 class SetName(StatesGroup):
@@ -32,7 +35,7 @@ async def command_start_handler(msg: Message, state: FSMContext, session: AsyncS
     await user_check_name(msg, state, session)
 
 
-@router.message(Command('update_name'))
+@router.message(Command(command.update_name))
 async def update_user_name(msg: Message, state: FSMContext, session: AsyncSession):
     await user_check_name(msg, state, session)
 
