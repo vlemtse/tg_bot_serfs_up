@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.keyboards import set_user_name
 from app.db import Users
-from app.db.crud.users import create_user
+from app.db.crud.users import save_user
 from app.bot.commands import commands
 
 router = Router()
@@ -71,6 +71,7 @@ async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, se
     if user:
         user.registration_name = name
         user.updated_at = str(datetime.now(UTC))
+        user.chat_id = callback_query.message.chat.id
     else:
         user = Users(
             id=user_id,
@@ -78,10 +79,11 @@ async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, se
             first_name=callback_query.from_user.first_name,
             last_name=callback_query.from_user.last_name,
             registration_name=name,
+            chat_id=callback_query.message.chat.id,
             updated_at=str(datetime.now(UTC))
         )
 
-    await create_user(session, user)
+    await save_user(session, user)
 
     await callback_query.bot.edit_message_text(
         text=f'Задано имя - {hbold(user.registration_name)}',

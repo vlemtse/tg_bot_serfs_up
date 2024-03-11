@@ -22,12 +22,13 @@ class Users(Base):
     last_name: Mapped[str] = mapped_column(nullable=True)
     registration_name: Mapped[str] = mapped_column(nullable=False)
     is_admin: Mapped[bool] = mapped_column(nullable=False, default=False)
+    chat_id: Mapped[int] = mapped_column(nullable=True)
     updated_at: Mapped[str] = mapped_column(nullable=False)
     connected_at: Mapped[str] = mapped_column(nullable=False, default=str_datetime)
 
     def __repr__(self):
         return (
-            f"\n================================================"
+            f"\n=========================="
             f"\nИдентификатор - {self.id}"
             f"\nТелега - @{self.username}"
             f"\nИмя - {self.first_name}"
