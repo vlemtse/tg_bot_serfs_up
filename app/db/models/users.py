@@ -1,6 +1,5 @@
-from sqlalchemy import Column, ForeignKey, String, Integer
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from sqlalchemy.sql import func
 
 from uuid import uuid4
 
