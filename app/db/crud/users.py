@@ -1,3 +1,11 @@
+__all__ = (
+    "save_user",
+    "get_user",
+    "get_all_users",
+    "get_user_by_username",
+    "get_adm_count",
+)
+
 from sqlalchemy import select, Result, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import Users

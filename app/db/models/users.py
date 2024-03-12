@@ -1,15 +1,7 @@
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-
-from uuid import uuid4
-
-from datetime import datetime, UTC
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
-
-
-def str_datetime():
-    return str(datetime.now(UTC))
+from app.funcs import str_datetime
 
 
 class Users(Base):
@@ -37,15 +29,3 @@ class Users(Base):
             f"\nЗапись обновлена - {self.updated_at}"
             f"\nДата регистрации - {self.connected_at}\n\n"
         )
-
-
-class UserLessonRegistrationProcess(Base):
-    __tablename__ = "user_lesson_registration_process"
-
-    object_id: Mapped[str] = mapped_column(primary_key=True, default=uuid4)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
-    chat_id: Mapped[str] = mapped_column(nullable=False)
-    message_id: Mapped[str] = mapped_column(nullable=False)
-    status: Mapped[str] = mapped_column(nullable=False)
-
-    user: Mapped["Users"] = relationship()

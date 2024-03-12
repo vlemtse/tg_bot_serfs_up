@@ -1,11 +1,17 @@
+from enum import Enum
+
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.markdown import hbold
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bot.keyboards import (
+from app.bot.schemas import LessonRegProcess
+from app.db.models import UserLessonRegistrationProcess
+from app.db.crud import ULRP
+from app.bot.keyboard import (
     select_lesson_type,
     select_day,
     today,
@@ -17,6 +23,7 @@ from app.bot.keyboards import (
     select_preferred_instructor,
     accept_or_change_registration
 )
+from app.bot.keyboards import LessonRegProcessKeyboards
 
 router = Router()
 
@@ -33,37 +40,84 @@ class RegForALesson(StatesGroup):
     registration_done = State()
 
 
+class RegState(Enum):
+    select_lesson_type = 'select_lesson_type'
+    select_lesson_date = 'select_lesson_date'
+    select_lesson_number = 'select_lesson_number'
+    select_place = 'select_place'
+    select_theory = 'select_theory'
+    select_preferred_start_time = 'select_preferred_start_time'
+    select_preferred_instructor = 'select_preferred_instructor'
+    accept_or_change_registration = 'accept_or_change_registration'
+    registration_done = 'registration_done'
+
+
 @router.message(Command('registration_for_a_lesson'))
-async def command_registration_for_a_lesson(msg: Message, state: FSMContext) -> None:
-    await state.clear()
+async def command_registration_for_a_lesson(msg: Message, state: FSMContext, session: AsyncSession) -> None:
+    msg_s = await msg.answer(
+        text=f'На какой вид занятия Вы хотите записаться?',
+        reply_markup=await LessonRegProcessKeyboards.select_lesson_type(session)
+    )
 
-    await msg.answer(f'На какой вид занятия Вы хотите записаться?',
-                     reply_markup=select_lesson_type)
-
-    await state.set_state(RegForALesson.select_lesson_type)
+    str_state = LessonRegProcess().model_dump_json()
+    await update_state(
+        session=session,
+        user_id=msg.from_user.id,
+        chat_id=msg.chat.id,
+        message_id=msg_s.message_id,
+        status=RegState.select_lesson_type.value,
+        state=str_state
+    )
 
 
 @router.callback_query(
-    RegForALesson.select_lesson_type
+    F.data.startswith(LessonRegProcessKeyboards.select_lesson_type_prefix)
 )
-async def set_select_lesson_type(callback_query: CallbackQuery, state: FSMContext):
+async def set_select_lesson_type(callback_query: CallbackQuery, session: AsyncSession):
+    data = callback_query.data.replace(LessonRegProcessKeyboards.select_lesson_type_prefix, '')
+    data = data.replace('_', ' ')
 
-    await state.update_data(lesson_type=callback_query.data)
+    ulrp = await ULRP.get_by_params(
+        session=session,
+        user_id=callback_query.from_user.id,
+        chat_id=callback_query.message.chat.id,
+        message_id=callback_query.message.message_id,
+    )
+    state = LessonRegProcess.model_validate_json(ulrp.state)
+    state.type = data
+    str_state = state.model_dump_json()
+
+    await update_state(
+        session=session,
+        user_id=callback_query.from_user.id,
+        chat_id=callback_query.message.chat.id,
+        message_id=callback_query.message.message_id,
+        state=str_state,
+        status=RegState.select_lesson_date.value,
+    )
 
     await callback_query.bot.edit_message_text(
         text=f'На какой день вы хотите записаться?',
         chat_id=callback_query.message.chat.id,
         message_id=callback_query.message.message_id,
-        reply_markup=select_day
+        reply_markup=await LessonRegProcessKeyboards.select_day()
     )
-
-    await state.set_state(RegForALesson.select_lesson_date)
 
 
 @router.callback_query(
-    RegForALesson.select_lesson_date
+    F.data.startswith(LessonRegProcessKeyboards.select_day_prefix)
 )
-async def set_select_lesson_date(callback_query: CallbackQuery, state: FSMContext):
+async def set_select_lesson_day(callback_query: CallbackQuery, state: FSMContext, session: AsyncSession):
+    # todo Доделать
+    ulrp = await ULRP.get_by_params(
+        session=session,
+        user_id=callback_query.from_user.id,
+        chat_id=callback_query.message.chat.id,
+        message_id=callback_query.message.message_id,
+    )
+    if ulrp:
+        state = LessonRegProcess.model_validate_json(ulrp.state)
+
     if callback_query.data == 'today_lesson':
         date = today
     else:
@@ -215,3 +269,21 @@ async def set_change_registration(callback_query: CallbackQuery, state: FSMConte
     )
 
     await state.set_state(RegForALesson.select_lesson_type)
+
+
+async def update_state(
+        session: AsyncSession,
+        user_id: int,
+        chat_id: int,
+        message_id: int,
+        status: str,
+        state: str = None
+):
+    ulrp = UserLessonRegistrationProcess(
+        user_id=user_id,
+        chat_id=chat_id,
+        message_id=message_id,
+        status=status,
+        state=state
+    )
+    await ULRP.save(session=session, obj=ulrp)

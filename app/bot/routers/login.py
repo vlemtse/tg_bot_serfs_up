@@ -8,7 +8,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.markdown import hbold
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bot.keyboards import set_user_name
+from app.bot.keyboard import set_user_name
 from app.db import Users
 from app.db.crud.users import save_user
 from app.bot.commands import commands

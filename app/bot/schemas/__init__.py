@@ -1,6 +1,3 @@
-from .users import User, UserCreate
+from .lesson_reg_process import *
 
-__all__ = (
-    "User",
-    "UserCreate",
-)
+__all__ = ("LessonRegProcess",)
