@@ -1,15 +1,15 @@
+__all__ = ("UserLessonRegistrationProcessDb",)
+
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-
-from uuid import uuid4
 
 from app.db.base import Base
 from app.funcs import str_datetime, str_uuid4
 
-from .users import Users
+from .users import UserDb
 
 
-class UserLessonRegistrationProcess(Base):
+class UserLessonRegistrationProcessDb(Base):
     __tablename__ = "user_lesson_registration_process"
 
     object_id: Mapped[str] = mapped_column(primary_key=True, default=str_uuid4)
@@ -21,4 +21,4 @@ class UserLessonRegistrationProcess(Base):
     status: Mapped[str] = mapped_column(nullable=False)
     updated_at: Mapped[str] = mapped_column(nullable=False, default=str_datetime)
 
-    user: Mapped["Users"] = relationship()
+    user: Mapped["UserDb"] = relationship()

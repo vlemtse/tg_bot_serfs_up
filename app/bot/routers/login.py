@@ -9,7 +9,7 @@ from aiogram.utils.markdown import hbold
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.keyboard import set_user_name
-from app.db import Users
+from app.db import UserDb
 from app.db.crud.users import save_user
 from app.bot.commands import commands
 
@@ -25,7 +25,7 @@ class SetName(StatesGroup):
 
 
 @router.message(CommandStart())
-async def command_start_handler(msg: Message, state: FSMContext, user: Users) -> None:
+async def command_start_handler(msg: Message, state: FSMContext, user: UserDb) -> None:
     """
     This handler receives messages with `/start` command
     """
@@ -36,11 +36,11 @@ async def command_start_handler(msg: Message, state: FSMContext, user: Users) ->
 
 
 @router.message(Command(command.update_name.key))
-async def update_user_name(msg: Message, state: FSMContext, user: Users):
+async def update_user_name(msg: Message, state: FSMContext, user: UserDb):
     await user_check_name(msg, state, user)
 
 
-async def user_check_name(msg: Message, state: FSMContext, user: Users):
+async def user_check_name(msg: Message, state: FSMContext, user: UserDb):
     if user:
         name = user.registration_name
     else:
@@ -59,7 +59,7 @@ async def user_check_name(msg: Message, state: FSMContext, user: Users):
     SetName.accept_name_or_set_new,
     F.data == 'set_user_name_yes'
 )
-async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, session: AsyncSession, user: Users):
+async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, session: AsyncSession, user: UserDb):
     user_data = await state.get_data()
     name = user_data.get('name')
 
@@ -73,7 +73,7 @@ async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, se
         user.updated_at = str(datetime.now(UTC))
         user.chat_id = callback_query.message.chat.id
     else:
-        user = Users(
+        user = UserDb(
             id=user_id,
             username=callback_query.from_user.username,
             first_name=callback_query.from_user.first_name,

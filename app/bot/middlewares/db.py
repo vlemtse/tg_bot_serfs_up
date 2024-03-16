@@ -4,12 +4,12 @@ from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db import db_helper, Users
+from app.db import db_helper, UserDb
 
 
 class DbSessionMiddleware(BaseMiddleware):
     def __init__(self) -> None:
-        self.db_helper = db_helper
+        self.session_factory = db_helper.session_factory
 
     async def __call__(
         self,
@@ -17,12 +17,12 @@ class DbSessionMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any],
     ) -> Any:
-        session: AsyncSession = await anext(self.db_helper.session_dependency())
         user_id = data["event_from_user"].id
-        user = await session.get(Users, user_id)
+        async with self.session_factory() as s:
+            user = await s.get(UserDb, user_id)
 
-        data["user"] = user
-        data["session"] = session
-        data["is_admin"] = user.is_admin if user else None
+            data["user"] = user
+            data["session"] = s
+            data["is_admin"] = user.is_admin if user else None
 
-        return await handler(event, data)
+            return await handler(event, data)

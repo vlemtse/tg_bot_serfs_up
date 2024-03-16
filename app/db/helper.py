@@ -23,18 +23,6 @@ class DBHelper:
             autocommit=False, autoflush=False, bind=self.engine, expire_on_commit=False
         )
 
-    def get_scoped_session(self):
-        session = async_scoped_session(
-            session_factory=self.session_factory, scopefunc=current_task
-        )
-
-        return session
-
-    async def session_dependency(self) -> AsyncSession:
-        s = self.get_scoped_session()
-        yield s
-        await s.close()
-
 
 db_helper = DBHelper(
     url=config.db.url,
