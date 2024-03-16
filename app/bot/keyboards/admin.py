@@ -3,16 +3,6 @@ __all__ = ("AdminsKeyboards",)
 from datetime import datetime, timedelta
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.db import (
-    LessonTypeCrud,
-    LessonTypeDb,
-    LessonPlaceCrud,
-    LessonPlaceDb,
-    LessonInstructorCrud,
-    LessonInstructorDb,
-)
 
 
 class AdminsKeyboards:

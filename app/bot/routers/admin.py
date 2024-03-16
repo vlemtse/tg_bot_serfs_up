@@ -79,11 +79,13 @@ async def del_admin(msg: Message, state: FSMContext):
 @router.message(UpdateAdmin.select_admin, IsAdmin(True))
 async def set_admin(msg: Message, state: FSMContext, session: AsyncSession):
     await update_admin(msg, state, session, True)
+    await state.clear()
 
 
 @router.message(UpdateAdmin.delete_admin, IsAdmin(True))
 async def delete_admin(msg: Message, state: FSMContext, session: AsyncSession):
     await update_admin(msg, state, session, False)
+    await state.clear()
 
 
 async def update_admin(

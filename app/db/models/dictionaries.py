@@ -7,8 +7,6 @@ __all__ = (
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from uuid import uuid4
-
 from app.db.base import Base
 from app.funcs import str_datetime
 
