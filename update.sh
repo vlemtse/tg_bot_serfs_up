@@ -7,8 +7,11 @@ echo "Git pull complete"
 sudo systemctl stop bot_su.service
 echo "Stopping bot_su.service"
 
-source venv/bin/activate && pip install -r requirements.txt
-echo "Activating venv and installing requirements"
+source venv/bin/activate
+echo "Activating venv"
+
+pip install -r requirements.txt
+echo "Installing requirements"
 
 alembic upgrade head
 echo "Alembic upgrade completed"
