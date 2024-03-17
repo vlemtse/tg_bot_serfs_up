@@ -191,8 +191,10 @@ async def upload_users_registration(
         AdminsKeyboards.upload_users_registration_date_prefix, callback_query.data
     )
     regs: list[UserLessonRegistrationDb]
+    all_time = False
     if data == "all the time":
         regs = await UserLessonRegistrationCrud.get_all(session)
+        all_time = True
     else:
         regs = await UserLessonRegistrationCrud.get_by_date(session, data)
 
@@ -213,6 +215,14 @@ async def upload_users_registration(
             ).model_dump(by_alias=True)
         )
 
+    if not reg_upload:
+        await callback_query.bot.edit_message_text(
+            text="В базе нет записей.",
+            chat_id=callback_query.message.chat.id,
+            message_id=callback_query.message.message_id,
+        )
+        return
+
     file = path / file_name.format(str_datetime_file(False))
     with open(file, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
@@ -225,8 +235,21 @@ async def upload_users_registration(
             writer.writerow(i)
 
     await callback_query.message.answer_document(
+        text="Данные успешно загружены.",
         reply_to_message_id=callback_query.message.message_id,
         document=FSInputFile(path=file),
+    )
+
+    text = "Выгрузка данных за {}."
+    if all_time:
+        text = text.format("все время")
+    else:
+        text = text.format(f"'{data}'")
+
+    await callback_query.bot.edit_message_text(
+        text=text,
+        chat_id=callback_query.message.chat.id,
+        message_id=callback_query.message.message_id,
     )
 
     if os.path.exists(file):
