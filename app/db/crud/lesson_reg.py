@@ -2,6 +2,8 @@ __all__ = ("UserLessonRegistrationCrud",)
 
 from sqlalchemy import select, Result, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.db.models import UserLessonRegistrationDb
 
 
@@ -14,8 +16,10 @@ class UserLessonRegistrationCrud:
 
     @classmethod
     async def get_all(cls, session: AsyncSession) -> list[UserLessonRegistrationDb]:
-        stmt = select(UserLessonRegistrationDb).order_by(
-            UserLessonRegistrationDb.date.desc()
+        stmt = (
+            select(UserLessonRegistrationDb)
+            .order_by(UserLessonRegistrationDb.date.desc())
+            .options(selectinload(UserLessonRegistrationDb.user))
         )
         result: Result = await session.execute(stmt)
         users_lessons_registrations = result.scalars().all()
@@ -29,6 +33,7 @@ class UserLessonRegistrationCrud:
             select(UserLessonRegistrationDb)
             .where(UserLessonRegistrationDb.date == date)
             .order_by(UserLessonRegistrationDb.date.desc())
+            .options(selectinload(UserLessonRegistrationDb.user))
         )
         result: Result = await session.execute(stmt)
         users_lessons_registrations = result.scalars().all()
