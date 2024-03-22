@@ -208,7 +208,7 @@ async def upload_users_registration(
                 type=i.type,
                 number=i.number,
                 place=i.place,
-                need_theory=i.need_theory,
+                need_theory="Да" if i.need_theory else "",
                 start_time=i.start_time,
                 instructor=i.instructor,
                 comment=i.comment,

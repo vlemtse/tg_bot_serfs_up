@@ -247,7 +247,7 @@ async def set_accept_registration(
             date=state.date,
             number=state.number,
             place=state.place,
-            need_theory=False if bool(state.listened_to_theory) else True,
+            need_theory=False if state.listened_to_theory else True,
             start_time=state.start_time,
             instructor=state.instructor,
         ),
@@ -290,12 +290,13 @@ async def set_change_registration(
 
 
 async def prepare_end_text(text: str, state: LessonRegProcess):
+    theory = " + теория" if not state.listened_to_theory else ""
     return (
         f"{text}\n"
         f"День - {hbold(state.date)}\n"
         f"Вид - {hbold(state.type)}\n"
         f"Номер - {hbold(state.number)}\n"
-        f"Место - {hbold(state.place)}\n"
+        f"Место - {hbold(state.place + theory)}\n"
         f"Время - {hbold(state.start_time)}\n"
         f"Инструктор - {hbold(state.instructor)}\n"
     )
@@ -335,7 +336,7 @@ async def update_data(
             case LessonRegProcessKeyboards.place_prefix:
                 state.place = data
             case LessonRegProcessKeyboards.theory_prefix:
-                state.listened_to_theory = data
+                state.listened_to_theory = True if data == "True" else False
             case LessonRegProcessKeyboards.preferred_start_time_prefix:
                 state.start_time = data
             case LessonRegProcessKeyboards.preferred_instructor_prefix:

@@ -53,14 +53,14 @@ class LessonRegProcessKeyboards:
         today = now.strftime("%d.%m.%Y")
         tomorrow = (now + timedelta(1)).strftime("%d.%m.%Y")
 
-        inline_keyboard.append(
-            [
-                InlineKeyboardButton(
-                    text=f"Сегодня - {today}",
-                    callback_data=cls.day_prefix + today,
-                ),
-            ]
-        )
+        # inline_keyboard.append(
+        #     [
+        #         InlineKeyboardButton(
+        #             text=f"Сегодня - {today}",
+        #             callback_data=cls.day_prefix + today,
+        #         ),
+        #     ]
+        # )
         inline_keyboard.append(
             [
                 InlineKeyboardButton(

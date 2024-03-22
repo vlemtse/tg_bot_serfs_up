@@ -8,7 +8,7 @@ class LessonRegProcess(BaseModel):
     date: str | None = Field(default=None)
     number: str | None = Field(default=None)
     place: str | None = Field(default=None)
-    listened_to_theory: str | None = Field(default=None)
+    listened_to_theory: bool | None = Field(default=None)
     start_time: str | None = Field(default=None)
     instructor: str | None = Field(default=None)
     comment: str | None = Field(default=None)
