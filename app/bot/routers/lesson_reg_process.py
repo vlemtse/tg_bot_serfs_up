@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 
 from aiogram import Router, F
@@ -10,15 +11,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.routers.login import command_start_handler
 from app.bot.schemas import LessonRegProcess
+from app.configs import config
 from app.db import (
     UserDb,
     UserLessonRegistrationDb,
     UserLessonRegistrationCrud,
     UserLessonRegistrationProcessDb,
     ULRP,
+    UserCrud,
 )
 from app.bot.keyboards import LessonRegProcessKeyboards
-from app.funcs import prepare_data
+from app.funcs import prepare_data, get_datetime_shri
 
 router = Router()
 
@@ -38,13 +41,13 @@ class RegState(Enum):
 @router.message(Command("registration_for_a_lesson"))
 async def command_registration_for_a_lesson(
     msg: Message, state: FSMContext, session: AsyncSession, user: UserDb | None
-) -> None:
+):
     if not user:
         return await command_start_handler(msg=msg, state=state, user=user)
 
     msg_s = await msg.answer(
-        text=f"На какой день вы хотите записаться?",
-        reply_markup=await LessonRegProcessKeyboards.select_day(),
+        text=f"На какой вид занятия Вы хотите записаться?",
+        reply_markup=await LessonRegProcessKeyboards.select_lesson_type(session),
     )
 
     str_state = LessonRegProcess().model_dump_json()
@@ -52,7 +55,7 @@ async def command_registration_for_a_lesson(
         user_id=msg.from_user.id,
         chat_id=msg.chat.id,
         message_id=msg_s.message_id,
-        status=RegState.select_lesson_date.value,
+        status=RegState.select_lesson_type.value,
         state=str_state,
     )
     await ULRP.save(session=session, obj=ulrp)
@@ -69,28 +72,6 @@ async def set_select_lesson_day(
         user_id=user.id,
         chat_id=callback_query.message.chat.id,
         message_id=callback_query.message.message_id,
-        status=RegState.select_lesson_type.value,
-        session=session,
-    )
-
-    await callback_answer(
-        callback_query=callback_query,
-        text=f"На какой вид занятия Вы хотите записаться?",
-        state=state,
-        keyboard=await LessonRegProcessKeyboards.select_lesson_type(session),
-    )
-
-
-@router.callback_query(F.data.startswith(LessonRegProcessKeyboards.type_prefix))
-async def set_select_lesson_type(
-    callback_query: CallbackQuery, session: AsyncSession, user: UserDb
-):
-    state = await update_data(
-        prefix=LessonRegProcessKeyboards.type_prefix,
-        data=callback_query.data,
-        user_id=user.id,
-        chat_id=callback_query.message.chat.id,
-        message_id=callback_query.message.message_id,
         status=RegState.select_lesson_number.value,
         session=session,
     )
@@ -100,6 +81,72 @@ async def set_select_lesson_type(
         text=f"Выберите номер занятия из пакета:",
         state=state,
         keyboard=await LessonRegProcessKeyboards.select_lesson_number(),
+    )
+
+
+@router.callback_query(F.data.startswith(LessonRegProcessKeyboards.type_prefix))
+async def set_select_lesson_type(
+    callback_query: CallbackQuery, session: AsyncSession, user: UserDb
+):
+    data = await prepare_data(
+        prefix=LessonRegProcessKeyboards.type_prefix, data=callback_query.data
+    )
+    if data == "Индивидуальное":
+        text = "Для записи на индивидуальное занятие напиши в личку"
+        return await go_to_reg_admin(
+            callback_query=callback_query, text=text, session=session, user=user
+        )
+
+    date: datetime = await get_datetime_shri()
+    conf_timelimit = config.tg_bot.registration.timelimit
+    timelimit = int(f"{conf_timelimit.hours}{conf_timelimit.minutes}")
+    if int(date.time().strftime("%H%M")) > timelimit:
+        text = (
+            f"Запись на {data} занятие выполняется до {conf_timelimit.hours}:{conf_timelimit.minutes}\n"
+            f"За дополнительной информацией обратитесь к администратору"
+        )
+        return await go_to_reg_admin(
+            callback_query=callback_query, text=text, session=session, user=user
+        )
+
+    state = await update_data(
+        prefix=LessonRegProcessKeyboards.type_prefix,
+        data=callback_query.data,
+        user_id=user.id,
+        chat_id=callback_query.message.chat.id,
+        message_id=callback_query.message.message_id,
+        status=RegState.select_lesson_date.value,
+        session=session,
+    )
+
+    await callback_answer(
+        callback_query=callback_query,
+        text=f"На какой день вы хотите записаться?",
+        state=state,
+        keyboard=await LessonRegProcessKeyboards.select_day(),
+    )
+
+
+async def go_to_reg_admin(
+    callback_query: CallbackQuery, session: AsyncSession, text: str, user: UserDb
+):
+    ulrp = await ULRP.get_by_params(
+        session=session,
+        message_id=callback_query.message.message_id,
+        chat_id=callback_query.message.chat.id,
+        user_id=user.id,
+    )
+    # Удаляем процесс после успешной регистрации
+    await ULRP.delete(session=session, obj=ulrp)
+
+    reg_adm_users: list[UserDb] = await UserCrud.get_reg_admins(session)
+    usernames = [f"@{user.username}" for user in reg_adm_users]
+    str_telegram_users = ", ".join(usernames)
+
+    return await callback_query.bot.edit_message_text(
+        text=f"{text} - {str_telegram_users}",
+        chat_id=callback_query.message.chat.id,
+        message_id=callback_query.message.message_id,
     )
 
 
@@ -248,10 +295,12 @@ async def set_accept_registration(
             number=state.number,
             place=state.place,
             need_theory=False if state.listened_to_theory else True,
-            start_time=state.start_time,
-            instructor=state.instructor,
+            start_time="" if state.start_time == "Неважно" else state.start_time,
+            instructor="" if state.instructor == "Неважно" else state.instructor,
         ),
     )
+    # Удаляем процесс после успешной регистрации
+    await ULRP.delete(session=session, obj=ulrp)
 
     text = await prepare_end_text(
         text=f"Поздравляю! Вы записаны на занятие:\n", state=state
@@ -357,8 +406,8 @@ async def update_data(
 async def callback_answer(
     callback_query: CallbackQuery,
     text: str,
-    state: LessonRegProcess | None,
-    keyboard: InlineKeyboardMarkup,
+    state: LessonRegProcess | bool | None,
+    keyboard: InlineKeyboardMarkup | None,
 ):
     if state:
         await callback_query.bot.edit_message_text(

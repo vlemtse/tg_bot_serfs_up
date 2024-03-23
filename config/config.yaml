@@ -4,6 +4,10 @@ server:
 
 tg_bot:
   token: ${TG_BOT_TOKEN:6677226183:AAGslmpyfWPTzf9Giqifslo_yGKNhEbe8JE}
+  registration:
+    timelimit:
+      hours: '18'
+      minutes: '00'
 
 db:
   url: ${TG_BOT_DB_URL:sqlite+aiosqlite:///localdb/tg_bot_serfs_up.db}

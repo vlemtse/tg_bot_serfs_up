@@ -3,3 +3,10 @@ server:
 
 db:
   echo: False
+
+tg_bot:
+  token: 6418369255:AAHczPiHxY4jt-9KyBM6rpDBAGDmKyb-1bk
+  registration:
+    timelimit:
+      hours: '23'
+      minutes: '59'

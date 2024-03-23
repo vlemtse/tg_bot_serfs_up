@@ -1,8 +1,8 @@
 """init
 
-Revision ID: b70de2c8b8b0
+Revision ID: 6dee24e1af93
 Revises: 
-Create Date: 2024-03-16 01:17:05.910376
+Create Date: 2024-03-23 17:53:15.101938
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "b70de2c8b8b0"
+revision: str = "6dee24e1af93"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -28,7 +28,8 @@ def upgrade() -> None:
         sa.Column("first_name", sa.String(), nullable=True),
         sa.Column("last_name", sa.String(), nullable=True),
         sa.Column("registration_name", sa.String(), nullable=False),
-        sa.Column("is_admin", sa.Boolean(), nullable=False),
+        sa.Column("is_bot_admin", sa.Boolean(), nullable=False),
+        sa.Column("is_reg_admin", sa.Boolean(), nullable=False),
         sa.Column("chat_id", sa.Integer(), nullable=True),
         sa.Column("updated_at", sa.String(), nullable=False),
         sa.Column("connected_at", sa.String(), nullable=False),
@@ -40,39 +41,42 @@ def upgrade() -> None:
         sa.Column("object_id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("updated_at", sa.String(), nullable=False),
-        sa.Column("updated_user_id", sa.Integer(), nullable=False),
+        sa.Column("updated_user_id", sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(
             ["updated_user_id"],
             ["users.id"],
         ),
         sa.PrimaryKeyConstraint("object_id"),
         sa.UniqueConstraint("name"),
+        sa.UniqueConstraint("object_id"),
     )
     op.create_table(
         "lessons_places",
         sa.Column("object_id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("updated_at", sa.String(), nullable=False),
-        sa.Column("updated_user_id", sa.Integer(), nullable=False),
+        sa.Column("updated_user_id", sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(
             ["updated_user_id"],
             ["users.id"],
         ),
         sa.PrimaryKeyConstraint("object_id"),
         sa.UniqueConstraint("name"),
+        sa.UniqueConstraint("object_id"),
     )
     op.create_table(
         "lessons_types",
         sa.Column("object_id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("updated_at", sa.String(), nullable=False),
-        sa.Column("updated_user_id", sa.Integer(), nullable=False),
+        sa.Column("updated_user_id", sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(
             ["updated_user_id"],
             ["users.id"],
         ),
         sa.PrimaryKeyConstraint("object_id"),
         sa.UniqueConstraint("name"),
+        sa.UniqueConstraint("object_id"),
     )
     op.create_table(
         "user_lesson_registration_process",

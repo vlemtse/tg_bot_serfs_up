@@ -34,3 +34,4 @@ class ULRP:
         cls, session: AsyncSession, obj: UserLessonRegistrationProcessDb
     ) -> None:
         await session.delete(obj)
+        await session.commit()

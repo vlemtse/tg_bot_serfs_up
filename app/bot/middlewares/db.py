@@ -23,6 +23,6 @@ class DbSessionMiddleware(BaseMiddleware):
 
             data["user"] = user
             data["session"] = s
-            data["is_admin"] = user.is_admin if user else None
+            data["is_bot_admin"] = user.is_bot_admin if user else None
 
             return await handler(event, data)

@@ -1,18 +1,17 @@
 __all__ = ("LessonRegProcessKeyboards",)
 
+import time
 from datetime import datetime, timedelta
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db import (
-    LessonTypeCrud,
-    LessonTypeDb,
-    LessonPlaceCrud,
-    LessonPlaceDb,
-    LessonInstructorCrud,
-    LessonInstructorDb,
-)
+from app.db import *
+from app.funcs import get_datetime_shri
+
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class LessonRegProcessKeyboards:
@@ -49,8 +48,8 @@ class LessonRegProcessKeyboards:
     @classmethod
     async def select_day(cls):
         inline_keyboard = []
-        now = datetime.today().date()
-        today = now.strftime("%d.%m.%Y")
+        now = await get_datetime_shri()
+        # today = now.strftime("%d.%m.%Y")
         tomorrow = (now + timedelta(1)).strftime("%d.%m.%Y")
 
         # inline_keyboard.append(
@@ -173,9 +172,12 @@ class LessonRegProcessKeyboards:
 
     @classmethod
     async def select_preferred_instructor(cls, session: AsyncSession):
+        st = time.monotonic()
         elems: list[LessonInstructorDb] | None = await LessonInstructorCrud.get_all(
             session
         )
+        end = time.monotonic() - st
+        logger.info("Инструктора из бд: " + str(end))
         inline_keyboard = []
         for elem in elems:
             name = elem.name
@@ -201,6 +203,8 @@ class LessonRegProcessKeyboards:
         select_instructor = InlineKeyboardMarkup(
             inline_keyboard=inline_keyboard,
         )
+        end = time.monotonic() - st
+        logger.info("Клавиатура инструкторов готова: " + str(end))
 
         return select_instructor
 

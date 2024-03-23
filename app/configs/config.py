@@ -1,3 +1,5 @@
+__all__ = ("config",)
+
 from pydantic import BaseModel, Field
 
 from app.configs.config_loader import load_active_settings
@@ -8,8 +10,18 @@ class Server(BaseModel):
     port: int
 
 
+class TimeLimit(BaseModel):
+    hours: str
+    minutes: str
+
+
+class Registration(BaseModel):
+    timelimit: TimeLimit
+
+
 class TGBot(BaseModel):
     token: str
+    registration: Registration
 
 
 class Database(BaseModel):

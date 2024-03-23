@@ -1,6 +1,7 @@
 from datetime import datetime, UTC
 
 from aiogram import F, Router
+from aiogram.exceptions import CallbackAnswerException
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -8,10 +9,14 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.markdown import hbold
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bot.keyboard import set_user_name
+from app.bot.keyboards import LoginKeyboards
 from app.db import UserDb
-from app.db.crud.users import save_user
+from app.db.crud import UserCrud
 from app.bot.commands import commands
+
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 router = Router()
 
@@ -35,7 +40,7 @@ async def command_start_handler(msg: Message, state: FSMContext, user: UserDb) -
     await user_check_name(msg, state, user)
 
 
-@router.message(Command(command.update_name.key))
+@router.message(Command(command.update_name.command))
 async def update_user_name(msg: Message, state: FSMContext, user: UserDb):
     await user_check_name(msg, state, user)
 
@@ -44,27 +49,28 @@ async def user_check_name(msg: Message, state: FSMContext, user: UserDb):
     if user:
         name = user.registration_name
     else:
-        name = f'{msg.from_user.first_name} {msg.from_user.last_name[0].upper()}'
+        name = f'{msg.from_user.first_name}'
+        if msg.from_user.last_name:
+            name += f' {msg.from_user.last_name[0].upper()}'
 
     await msg.answer(f'{hbold(name)}'
                      f' - имя соответствует?',
-                     reply_markup=set_user_name)
+                     reply_markup=await LoginKeyboards.set_user_name())
 
     await state.update_data(name=name)
 
-    await state.set_state(SetName.accept_name_or_set_new)
-
 
 @router.callback_query(
-    SetName.accept_name_or_set_new,
-    F.data == 'set_user_name_yes'
+    F.data.startswith(LoginKeyboards.user_name_prefix),
+    F.data.endswith('True')
 )
 async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, session: AsyncSession, user: UserDb):
     user_data = await state.get_data()
     name = user_data.get('name')
-
     if not name:
-        name = f'{callback_query.from_user.first_name} {callback_query.from_user.last_name[0].upper()}'
+        name = f'{callback_query.from_user.first_name}'
+        if callback_query.from_user.last_name:
+            name += f' {callback_query.from_user.last_name[0].upper()}'
 
     user_id = callback_query.from_user.id
 
@@ -83,7 +89,7 @@ async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, se
             updated_at=str(datetime.now(UTC))
         )
 
-    await save_user(session, user)
+    await UserCrud.save_user(session, user)
 
     await callback_query.bot.edit_message_text(
         text=f'Задано имя - {hbold(user.registration_name)}',
@@ -95,8 +101,8 @@ async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, se
 
 
 @router.callback_query(
-    SetName.accept_name_or_set_new,
-    F.data == 'set_user_name_new'
+    F.data.startswith(LoginKeyboards.user_name_prefix),
+    F.data.endswith('False')
 )
 async def msg_set_user_name_new(callback_query: CallbackQuery, state: FSMContext):
     await callback_query.bot.edit_message_text(
@@ -116,6 +122,6 @@ async def set_user_name_new(msg: Message, state: FSMContext):
     await state.update_data(name=name)
     await msg.answer(f'{hbold(name)} '
                      f'- имя соответствует?',
-                     reply_markup=set_user_name)
+                     reply_markup=await LoginKeyboards.set_user_name())
 
-    await state.set_state(SetName.accept_name_or_set_new)
+    await state.set_state()

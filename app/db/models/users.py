@@ -14,7 +14,8 @@ class UserDb(Base):
     first_name: Mapped[str] = mapped_column(nullable=True)
     last_name: Mapped[str] = mapped_column(nullable=True)
     registration_name: Mapped[str] = mapped_column(nullable=False)
-    is_admin: Mapped[bool] = mapped_column(nullable=False, default=False)
+    is_bot_admin: Mapped[bool] = mapped_column(nullable=False, default=False)
+    is_reg_admin: Mapped[bool] = mapped_column(nullable=False, default=False)
     chat_id: Mapped[int] = mapped_column(nullable=True)
     updated_at: Mapped[str] = mapped_column(nullable=False)
     connected_at: Mapped[str] = mapped_column(nullable=False, default=str_datetime)
@@ -27,7 +28,8 @@ class UserDb(Base):
             f"\nИмя - {self.first_name}"
             f"\nФамилия - {self.last_name}"
             f"\nИмя для уроков - {self.registration_name}"
-            f"\nАдмин - {self.is_admin}"
+            f"\nАдмин бота - {self.is_bot_admin}"
+            f"\nАдмин регистрации - {self.is_reg_admin}"
             f"\nЗапись обновлена - {self.updated_at}"
             f"\nДата регистрации - {self.connected_at}\n\n"
         )
