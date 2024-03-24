@@ -188,7 +188,7 @@ async def set_select_lesson_place(
 
     await callback_answer(
         callback_query=callback_query,
-        text=f'У тебя уже была теория для "{state.place}"?',
+        text=f'Нужна теория для "{state.place}"?',
         state=state,
         keyboard=await LessonRegProcessKeyboards.select_theory(),
     )
@@ -294,7 +294,7 @@ async def set_accept_registration(
             date=state.date,
             number=state.number,
             place=state.place,
-            need_theory=False if state.listened_to_theory else True,
+            need_theory=state.need_theory,
             start_time="" if state.start_time == "Неважно" else state.start_time,
             instructor="" if state.instructor == "Неважно" else state.instructor,
         ),
@@ -339,7 +339,7 @@ async def set_change_registration(
 
 
 async def prepare_end_text(text: str, state: LessonRegProcess):
-    theory = " + теория" if not state.listened_to_theory else ""
+    theory = " + теория" if state.need_theory else ""
     return (
         f"{text}\n"
         f"День - {hbold(state.date)}\n"
@@ -385,7 +385,7 @@ async def update_data(
             case LessonRegProcessKeyboards.place_prefix:
                 state.place = data
             case LessonRegProcessKeyboards.theory_prefix:
-                state.listened_to_theory = True if data == "True" else False
+                state.need_theory = True if data == "True" else False
             case LessonRegProcessKeyboards.preferred_start_time_prefix:
                 state.start_time = data
             case LessonRegProcessKeyboards.preferred_instructor_prefix:

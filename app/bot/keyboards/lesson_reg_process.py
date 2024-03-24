@@ -119,10 +119,10 @@ class LessonRegProcessKeyboards:
         inline_keyboard = [
             [
                 InlineKeyboardButton(
-                    text=f"Да", callback_data=cls.theory_prefix + "True"
+                    text=f"Да, нужна", callback_data=cls.theory_prefix + "True"
                 ),
                 InlineKeyboardButton(
-                    text=f"Нет", callback_data=cls.theory_prefix + "False"
+                    text=f"Нет, не нужна", callback_data=cls.theory_prefix + "False"
                 ),
             ]
         ]
