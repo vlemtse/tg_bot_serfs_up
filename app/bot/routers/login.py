@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, UTC
 
 from aiogram import F, Router
@@ -21,6 +22,7 @@ logger = getLogger(__name__)
 router = Router()
 
 command = commands.user
+name_template = r'(^[А-ЯA-Z][а-яa-z]* [А-ЯA-Z]$)'
 
 
 class SetName(StatesGroup):
@@ -34,8 +36,12 @@ async def command_start_handler(msg: Message, state: FSMContext, user: UserDb) -
     """
     This handler receives messages with `/start` command
     """
-    await msg.answer(f"Привет, {hbold(msg.from_user.full_name)}!"
-                     f"\nДля регистрации на урок необходимо указать Имя и первую букву Фамилии")
+    text = (
+        f'Привет, {hbold(msg.from_user.full_name)}!'
+        f'\nДля регистрации на уроки необходимо указать {hbold('Имя')} с загавной буквы '
+        f'и первую заглавную букву {hbold('Фамилии')}. Например:'
+        f'\n{hbold('Иван В')}')
+    await msg.answer(text)
 
     await user_check_name(msg, state, user)
 
@@ -52,12 +58,17 @@ async def user_check_name(msg: Message, state: FSMContext, user: UserDb):
         name = f'{msg.from_user.first_name}'
         if msg.from_user.last_name:
             name += f' {msg.from_user.last_name[0].upper()}'
-
-    await msg.answer(f'{hbold(name)}'
-                     f' - имя соответствует?',
-                     reply_markup=await LoginKeyboards.set_user_name())
-
-    await state.update_data(name=name)
+        else:
+            return await send_name_dont_match_pattern(
+                msg=msg,
+                name=name,
+                state=state
+            )
+    await send_name_match_pattern(
+        msg=msg,
+        name=name,
+        state=state
+    )
 
 
 @router.callback_query(
@@ -105,9 +116,10 @@ async def set_user_name_yes(callback_query: CallbackQuery, state: FSMContext, se
     F.data.endswith('False')
 )
 async def msg_set_user_name_new(callback_query: CallbackQuery, state: FSMContext):
+    text = (f'Введите {hbold('Имя')} с загавной буквы и первую заглавную букву {hbold('Фамилии')}. Например:'
+            f'\n{hbold('Иван В')}')
     await callback_query.bot.edit_message_text(
-        text=f'Введите Имя и первую букву Фамилии. Например:\n'
-             f'{hbold('Иван В')}',
+        text=text,
         chat_id=callback_query.message.chat.id,
         message_id=callback_query.message.message_id
     )
@@ -119,9 +131,35 @@ async def msg_set_user_name_new(callback_query: CallbackQuery, state: FSMContext
 )
 async def set_user_name_new(msg: Message, state: FSMContext):
     name = msg.text
+
+    checked_name = re.match(pattern=name_template, string=name)
+    if not checked_name:
+        return await send_name_dont_match_pattern(
+            msg=msg,
+            name=name,
+            state=state
+        )
+
+    await send_name_match_pattern(
+        msg=msg,
+        name=name,
+        state=state
+    )
+
+
+async def send_name_dont_match_pattern(msg: Message, state: FSMContext, name: str):
+    await state.clear()
+    text = f'Имя "{hbold(name)}" не соответствует шаблону. Установите новое.'
+
+    return await msg.answer(
+        text=text,
+        reply_markup=await LoginKeyboards.set_user_name(only_new=True))
+
+
+async def send_name_match_pattern(msg: Message, state: FSMContext, name: str):
     await state.update_data(name=name)
-    await msg.answer(f'{hbold(name)} '
-                     f'- имя соответствует?',
+    text = f'{hbold(name)} - сохранить это имя?'
+    await msg.answer(text=text,
                      reply_markup=await LoginKeyboards.set_user_name())
 
     await state.set_state()
