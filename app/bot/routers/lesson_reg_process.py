@@ -50,7 +50,6 @@ async def command_registration_for_a_lesson(
         reply_markup=await LessonRegProcessKeyboards.select_lesson_type(session),
     )
 
-
     str_state = LessonRegProcess().model_dump_json()
     ulrp = UserLessonRegistrationProcessDb(
         user_id=msg.from_user.id,
