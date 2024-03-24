@@ -45,6 +45,8 @@ async def command_registration_for_a_lesson(
     if not user:
         return await command_start_handler(msg=msg, state=state, user=user)
 
+    # todo проверка на наличие записи
+
     msg_s = await msg.answer(
         text=f"На какой вид занятия Вы хотите записаться?",
         reply_markup=await LessonRegProcessKeyboards.select_lesson_type(session),
