@@ -14,9 +14,10 @@ from app.configs.config_yaml import load_yaml_with_envvars
 logger = logging.getLogger(__name__)
 
 _settings_folder = os.environ.get("TGBM_SETTINGS_FOLDER", PROJECT_ROOT_PATH)
-_settings_folder = _settings_folder / 'config'
+_settings_folder = _settings_folder / "config"
 # if running in unittest, use the test profile
-_test_profile = ["test"] if "unittest" in sys.modules else []
+test_profile = os.environ.get("TGB_TEST_PROFILE")
+_test_profile = ["test"] if test_profile else []
 
 active_profiles: list[str] = unique_list(
     ["default"]
