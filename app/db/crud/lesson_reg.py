@@ -38,3 +38,17 @@ class UserLessonRegistrationCrud:
         result: Result = await session.execute(stmt)
         users_lessons_registrations = result.scalars().all()
         return list(users_lessons_registrations)
+
+    @classmethod
+    async def get_by_user_and_date(
+        cls, session: AsyncSession, date: str, user_id: int
+    ) -> UserLessonRegistrationDb | None:
+        stmt = select(UserLessonRegistrationDb).where(
+            and_(
+                UserLessonRegistrationDb.date == date,
+                UserLessonRegistrationDb.user_id == user_id,
+            )
+        )
+        result: Result = await session.execute(stmt)
+        users_lessons_registrations = result.scalars().one_or_none()
+        return users_lessons_registrations

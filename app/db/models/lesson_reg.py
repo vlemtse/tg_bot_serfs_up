@@ -1,12 +1,15 @@
 __all__ = ("UserLessonRegistrationDb",)
 
-from sqlalchemy import ForeignKey
+from typing import TYPE_CHECKING
+
+from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.db.base import Base
 from app.funcs import str_datetime, str_uuid4
 
-from .users import UserDb
+if TYPE_CHECKING:
+    from .users import UserDb
 
 
 class UserLessonRegistrationDb(Base):
@@ -24,4 +27,8 @@ class UserLessonRegistrationDb(Base):
     comment: Mapped[str] = mapped_column(nullable=True)
     created_at: Mapped[str] = mapped_column(nullable=False, default=str_datetime)
 
-    user: Mapped["UserDb"] = relationship()
+    user: Mapped["UserDb"] = relationship(lazy="select")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "date", name="user_lesson_registrations_uk"),
+    )
